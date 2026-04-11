@@ -179,7 +179,7 @@ If you did not request this, ignore this email.
         clientId: process.env.CLIENT_ID,
         clientSecret: process.env.CLIENT_SECRET,
         refreshToken: process.env.REFRESH_TOKEN,
-        accessToken: accessToken.token,
+        accessToken: accessToken?.token || accessToken,
       },
     });
 
