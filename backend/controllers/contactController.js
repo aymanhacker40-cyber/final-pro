@@ -14,6 +14,32 @@ oauth2Client.setCredentials({
   refresh_token: process.env.REFRESH_TOKEN,
 });
 
+// 🔥 نفس function بتاعة forgot password
+const sendEmail = async (to, subject, message) => {
+  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+  const email = [
+    `From: "Rahal Contact" <${process.env.EMAIL_USER}>`,
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    "",
+    message,
+  ].join("\n");
+
+  const encodedEmail = Buffer.from(email)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  await gmail.users.messages.send({
+    userId: "me",
+    requestBody: {
+      raw: encodedEmail,
+    },
+  });
+};
+
 exports.sendMessage = async (req, res) => {
   try {
     const { firstName, lastName, email, phone, subject, message } = req.body;
@@ -28,36 +54,26 @@ exports.sendMessage = async (req, res) => {
       message,
     });
 
-    // 2️⃣ Gmail API
-    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-
-    // 3️⃣ تجهيز الإيميل
-    const emailContent = `
-From: "Rahal Contact" <${process.env.EMAIL_USER}>
-To: ${process.env.EMAIL_USER}
-Subject: 📩 New Contact Message - ${subject}
+    // 2️⃣ تجهيز محتوى الرسالة
+    const fullMessage = `
+📩 New Contact Message
 
 Name: ${firstName} ${lastName}
 Email: ${email}
 Phone: ${phone}
 
+Subject: ${subject}
+
 Message:
 ${message}
     `;
 
-    const encodedMessage = Buffer.from(emailContent)
-      .toString("base64")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-
-    // 4️⃣ إرسال الإيميل
-    await gmail.users.messages.send({
-      userId: "me",
-      requestBody: {
-        raw: encodedMessage,
-      },
-    });
+    // 3️⃣ إرسال الإيميل (لنفسك)
+    await sendEmail(
+      process.env.EMAIL_USER, // ← الإيميل بتاعك
+      `📩 Contact Message - ${subject}`,
+      fullMessage
+    );
 
     res.status(201).json({ message: "Message sent successfully" });
 
@@ -69,5 +85,3 @@ ${message}
     });
   }
 };
-
-//last change
