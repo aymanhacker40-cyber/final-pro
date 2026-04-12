@@ -33,9 +33,18 @@ exports.sendMessage = async (req, res) => {
     // 2️⃣ نجيب Access Token
     const accessToken = await oauth2Client.getAccessToken();
 
-    // 3️⃣ إعداد الإيميل
+    if (!accessToken) {
+      throw new Error("Failed to get access token");
+    }
+
+    // 3️⃣ إعداد الإيميل (نفس ستايل forgot password)
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
       auth: {
         type: "OAuth2",
         user: process.env.EMAIL_USER,
@@ -65,7 +74,11 @@ ${message}
 
   } catch (error) {
     console.error("EMAIL ERROR:", error);
-    res.status(500).json({ message: "Server error" });
+
+    res.status(500).json({
+      message: "Error sending email",
+    });
   }
 };
+
 //last change
