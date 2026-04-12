@@ -1,7 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const generateToken = require("../utils/generateToken");
-const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const { google } = require("googleapis");
 
@@ -121,7 +120,36 @@ exports.login = async (req, res) => {
 
 
 // =====================
-// FORGOT PASSWORD (UPDATED 🔥)
+// SEND EMAIL FUNCTION 🔥
+// =====================
+const sendEmail = async (to, subject, message) => {
+  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+  const email = [
+    `From: "Rahal App" <${process.env.EMAIL_USER}>`,
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    "",
+    message,
+  ].join("\n");
+
+  const encodedEmail = Buffer.from(email)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  await gmail.users.messages.send({
+    userId: "me",
+    requestBody: {
+      raw: encodedEmail,
+    },
+  });
+};
+
+
+// =====================
+// FORGOT PASSWORD 🔥 (UPDATED)
 // =====================
 exports.forgotPassword = async (req, res) => {
   try {
@@ -168,37 +196,12 @@ ${resetLink}
 If you did not request this, ignore this email.
     `;
 
-    // ✅ Gmail OAuth2 بدل SMTP
-    const accessToken = await oauth2Client.getAccessToken();
-
-    if (!accessToken) {
-      throw new Error("Failed to get access token");
-    }
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-      auth: {
-        type: "OAuth2",
-        user: process.env.EMAIL_USER,
-        clientId: process.env.CLIENT_ID,
-        clientSecret: process.env.CLIENT_SECRET,
-        refreshToken: process.env.REFRESH_TOKEN,
-        accessToken: accessToken.token,
-      },
-    });
-
-
-
-    await transporter.sendMail({
-      from: `"Rahal App" <${process.env.EMAIL_USER}>`,
-      to: user.email,
-      subject: "Reset Your Password",
-      text: message,
-    });
+    // 🔥 إرسال الإيميل باستخدام Gmail API
+    await sendEmail(
+      user.email,
+      "Reset Your Password",
+      message
+    );
 
     return res.json({
       success: true,
@@ -267,4 +270,3 @@ exports.resetPassword = async (req, res) => {
     });
   }
 };
-//last change
