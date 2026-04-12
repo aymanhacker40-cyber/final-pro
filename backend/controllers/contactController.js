@@ -1,5 +1,4 @@
 const ContactMessage = require("../models/ContactMessage");
-const nodemailer = require("nodemailer");
 const { google } = require("googleapis");
 
 // إعداد OAuth2
@@ -11,7 +10,6 @@ const oauth2Client = new OAuth2(
   "https://developers.google.com/oauthplayground"
 );
 
-// حط الـ Refresh Token
 oauth2Client.setCredentials({
   refresh_token: process.env.REFRESH_TOKEN,
 });
@@ -30,44 +28,35 @@ exports.sendMessage = async (req, res) => {
       message,
     });
 
-    // 2️⃣ نجيب Access Token
-    const accessToken = await oauth2Client.getAccessToken();
+    // 2️⃣ Gmail API
+    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
-    if (!accessToken) {
-      throw new Error("Failed to get access token");
-    }
+    // 3️⃣ تجهيز الإيميل
+    const emailContent = `
+From: "Rahal Contact" <${process.env.EMAIL_USER}>
+To: ${process.env.EMAIL_USER}
+Subject: 📩 New Contact Message - ${subject}
 
-    // 3️⃣ إعداد الإيميل (نفس ستايل forgot password)
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-      auth: {
-        type: "OAuth2",
-        user: process.env.EMAIL_USER,
-        clientId: process.env.CLIENT_ID,
-        clientSecret: process.env.CLIENT_SECRET,
-        refreshToken: process.env.REFRESH_TOKEN,
-        accessToken: accessToken.token,
-      },
-    });
-
-    // 4️⃣ إرسال الإيميل
-    await transporter.sendMail({
-      from: `"Rahal Contact" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER,
-      subject: `📩 New Contact Message - ${subject}`,
-      text: `
 Name: ${firstName} ${lastName}
 Email: ${email}
 Phone: ${phone}
 
 Message:
 ${message}
-      `,
+    `;
+
+    const encodedMessage = Buffer.from(emailContent)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    // 4️⃣ إرسال الإيميل
+    await gmail.users.messages.send({
+      userId: "me",
+      requestBody: {
+        raw: encodedMessage,
+      },
     });
 
     res.status(201).json({ message: "Message sent successfully" });
