@@ -171,6 +171,10 @@ If you did not request this, ignore this email.
     // ✅ Gmail OAuth2 بدل SMTP
     const accessToken = await oauth2Client.getAccessToken();
 
+    if (!accessToken) {
+      throw new Error("Failed to get access token");
+    }
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -179,7 +183,7 @@ If you did not request this, ignore this email.
         clientId: process.env.CLIENT_ID,
         clientSecret: process.env.CLIENT_SECRET,
         refreshToken: process.env.REFRESH_TOKEN,
-        accessToken: accessToken?.token || accessToken,
+        accessToken: accessToken.token,
       },
     });
 
