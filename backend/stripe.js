@@ -1,8 +1,11 @@
-router.post('/create-payment-intent', async (req, res) => {
-  const { amount } = req.body;
+const express = require('express');
+const router = express.Router();
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-  console.log("AMOUNT RECEIVED:", amount);
-  console.log("KEY EXISTS:", !!process.env.STRIPE_SECRET_KEY);
+// Call this when user wants to pay
+router.post('/create-payment-intent', async (req, res) => {
+  const { amount } = req.body; // amount in cents, e.g. 5000 = $50
 
   try {
     const paymentIntent = await stripe.paymentIntents.create({
@@ -10,20 +13,10 @@ router.post('/create-payment-intent', async (req, res) => {
       currency: 'usd',
     });
 
-    console.log("PAYMENT INTENT CREATED");
-
-    res.json({
-      clientSecret: paymentIntent.client_secret
-    });
-
+    res.json({ clientSecret: paymentIntent.client_secret });
   } catch (err) {
-    console.error("FULL STRIPE ERROR:");
-    console.error(err);
-
-    res.status(500).json({
-      message: err.message,
-      type: err.type,
-      code: err.code
-    });
+    res.status(500).json({ error: err.message });
   }
 });
+
+module.exports = router;
