@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "googleapis": "^171.4.0",
-    "resend": "^6.10.0"
+    "resend": "^6.10.0",
+    "stripe": "^22.2.1"
   }
 }
