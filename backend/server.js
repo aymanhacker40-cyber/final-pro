@@ -4,7 +4,6 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const carRoutes = require("./routes/carRoutes");
-const stripeRoutes = require('./stripe');
 const dns = require("dns");
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
@@ -55,7 +54,6 @@ app.use("/api/carsar", carRoutes);
 app.use("/api/flights", require("./routes/flights"));
 app.use("/api/flight-bookings", require("./routes/flightBookingRoutes"));
 app.use("/api/my-bookings", require("./routes/myBookingRoutes"));
-app.use('/api/payments', stripeRoutes);
 
 // app.get("/", (req, res) => {
 //   if (!req.user || !req.user.isAdmin) {
